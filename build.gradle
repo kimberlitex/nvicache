@@ -1,0 +1,52 @@
+plugins {
+    id 'fabric-loom' version '1.10-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
+
+apply plugin: "fabric-loom"
+
+loom {
+    mixin.defaultRefmapName = "nvicache.refmap.json"
+}
+
+processResources {
+    inputs.properties("version": project.version)
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    modImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
+    modImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
+
+    // Sodium — только для компиляции, не вшиваем в JAR
+    modCompileOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-fabric"
+
+    // Nvidium — только для компиляции, не вшиваем в JAR
+    modCompileOnly files('../nvidium-0.4.1-beta9-1.21-1.21.1.jar')
+}

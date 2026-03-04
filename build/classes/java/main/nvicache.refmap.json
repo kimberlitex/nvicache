@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "com/nvicache/mixin/TextureAtlasAccessor": {
+      "height": "field_43114:I",
+      "width": "field_43113:I"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "com/nvicache/mixin/TextureAtlasAccessor": {
+        "height": "field_43114:I",
+        "width": "field_43113:I"
+      }
+    }
+  }
+}
