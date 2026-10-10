@@ -1,5 +1,6 @@
 package com.nvicache.mixin;
 
+import com.nvicache.interfaces.IIdProviderCacheable;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import me.cortex.nvidium.util.IdProvider;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,7 +12,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 @Mixin(value = IdProvider.class, remap = false)
-public class MixinIdProvider {
+public class MixinIdProvider implements IIdProviderCacheable {
 
     @Shadow private int cid;
     @Shadow private IntSortedSet free;

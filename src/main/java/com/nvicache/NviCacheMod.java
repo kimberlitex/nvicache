@@ -1,14 +1,17 @@
 package com.nvicache;
 
-import net.fabricmc.api.ClientModInitializer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NviCacheMod implements ClientModInitializer {
+@Mod(value = "nvicache", dist = Dist.CLIENT)
+public class NviCacheMod {
     public static final Logger LOGGER = LoggerFactory.getLogger("nvicache");
 
-    @Override
-    public void onInitializeClient() {
+    public NviCacheMod() {
+        NeoForge.EVENT_BUS.addListener(NviCacheCommand::register);
         LOGGER.info("NviCache initialized");
     }
 }

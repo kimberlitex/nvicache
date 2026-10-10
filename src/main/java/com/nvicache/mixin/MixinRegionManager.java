@@ -1,5 +1,6 @@
 package com.nvicache.mixin;
 
+import com.nvicache.interfaces.IIdProviderCacheable;
 import com.nvicache.interfaces.IRegionManagerCacheable;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import me.cortex.nvidium.managers.RegionManager;
@@ -28,7 +29,7 @@ public abstract class MixinRegionManager implements IRegionManagerCacheable {
     @Unique private static final Field F_DIRTY_REGIONS;
 
     // Region inner class fields
-    @Unique private static final Class<?> REGION_CLASS;
+    @Unique private static Class<?> REGION_CLASS;
     @Unique private static final Field F_RX, F_RY, F_RZ, F_ID, F_COUNT, F_TRANSFORM_ID;
     @Unique private static final Field F_POS2ID, F_ID2POS, F_SECTION_DATA, F_IS_DIRTY;
     @Unique private static final Constructor<?> REGION_CTOR;
@@ -42,16 +43,12 @@ public abstract class MixinRegionManager implements IRegionManagerCacheable {
             F_DIRTY_REGIONS = regionMgrClass.getDeclaredField("dirtyRegions");
             F_DIRTY_REGIONS.setAccessible(true);
 
-            REGION_CLASS = null;
             Class<?> rc = null;
             for (Class<?> c : regionMgrClass.getDeclaredClasses()) {
                 if (c.getSimpleName().equals("Region")) { rc = c; break; }
             }
             if (rc == null) throw new RuntimeException("Region class not found");
-            // reassign via temp
-            Field tmp = MixinRegionManager.class.getDeclaredField("REGION_CLASS");
-            tmp.setAccessible(true);
-            tmp.set(null, rc);
+            REGION_CLASS = rc;
 
             F_RX           = field(rc, "rx");
             F_RY           = field(rc, "ry");
@@ -88,7 +85,7 @@ public abstract class MixinRegionManager implements IRegionManagerCacheable {
             out.writeInt(regionTransformationIdMapping.size());
             for (var e : regionTransformationIdMapping.long2IntEntrySet()) { out.writeLong(e.getLongKey()); out.writeInt(e.getIntValue()); }
 
-            ((MixinIdProvider)(Object) idProvider).nvicache$writeTo(out);
+            ((IIdProviderCacheable)(Object) idProvider).nvicache$writeTo(out);
 
             Object[] regions = (Object[]) F_REGIONS.get(this);
             int maxIdx = idProvider.maxIndex();
@@ -116,7 +113,7 @@ public abstract class MixinRegionManager implements IRegionManagerCacheable {
             s = in.readInt();
             for (int i = 0; i < s; i++) regionTransformationIdMapping.put(in.readLong(), in.readInt());
 
-            ((MixinIdProvider)(Object) idProvider).nvicache$readFrom(in);
+            ((IIdProviderCacheable)(Object) idProvider).nvicache$readFrom(in);
 
             Object[] regions = (Object[]) F_REGIONS.get(this);
             @SuppressWarnings("unchecked")

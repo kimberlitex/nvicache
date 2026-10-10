@@ -9,10 +9,10 @@
     "MixinRegionManager",
     "MixinBufferArena",
     "MixinSegmentedManager",
-    "MixinIdProvider"
+    "MixinIdProvider",
+    "SectionManagerInvoker"
   ],
   "injectors": {
     "defaultRequire": 1
-  },
-  "refmap": "nvicache.refmap.json"
+  }
 }

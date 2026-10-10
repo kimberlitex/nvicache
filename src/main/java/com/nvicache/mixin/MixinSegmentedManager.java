@@ -1,21 +1,18 @@
 package com.nvicache.mixin;
 
+import com.nvicache.interfaces.ISegmentedManagerCacheable;
 import it.unimi.dsi.fastutil.longs.LongRBTreeSet;
 import me.cortex.nvidium.util.SegmentedManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.function.LongConsumer;
 
 @Mixin(value = SegmentedManager.class, remap = false)
-public class MixinSegmentedManager {
+public class MixinSegmentedManager implements ISegmentedManagerCacheable {
 
     @Shadow private LongRBTreeSet FREE;
     @Shadow private LongRBTreeSet TAKEN;
@@ -60,16 +57,11 @@ public class MixinSegmentedManager {
     }
 
     @Unique
-    public void nvicache$forEachTaken(NviCacheLongLongConsumer consumer) {
+    public void nvicache$forEachTaken(ISegmentedManagerCacheable.LongLongConsumer consumer) {
         for (long entry : TAKEN) {
             long addr = entry >>> (64 - ADDR_BITS_NVICACHE);
             long size = entry & SIZE_MSK_NVICACHE;
             consumer.accept(addr, size);
         }
-    }
-
-    @FunctionalInterface
-    public interface NviCacheLongLongConsumer {
-        void accept(long addr, long size);
     }
 }

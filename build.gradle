@@ -1,52 +1,83 @@
 plugins {
-    id 'fabric-loom' version '1.10-SNAPSHOT'
-    id 'maven-publish'
+    id 'java-library'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = project.mod_version
-group = project.maven_group
+version = mod_version
+group = mod_group_id
 
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
-
-apply plugin: "fabric-loom"
-
-loom {
-    mixin.defaultRefmapName = "nvicache.refmap.json"
+base {
+    archivesName = "${mod_id}-${minecraft_version}-neoforge"
 }
 
-processResources {
-    inputs.properties("version": project.version)
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
     }
-}
 
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = "https://api.modrinth.com/maven"
+    runs {
+        client {
+            client()
+            // ./gradlew runClient -PquickWorld="New World"  -> loads straight into that save
+            if (project.hasProperty('quickWorld')) {
+                programArguments.addAll('--quickPlaySingleplayer', project.property('quickWorld').toString())
             }
         }
-        filter {
-            includeGroup "maven.modrinth"
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
         }
     }
 }
 
+// 'localRuntime': mods present only when running runClient, never pulled by dependents or bundled.
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Acedium Sodiumized (Nvidium port for NeoForge + Sodium 0.8) — compile only, not bundled
+    compileOnly files("libs/${acedium_jar}")
+    // Sodium 0.8.13 NeoForge inner mod jar — compile only, not bundled
+    compileOnly files('libs/sodium-neoforge-0.8.13+mc1.21.1-mod.jar')
+}
 
-    modImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
-    modImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
+// runClient loads Acedium and Sodium from run/mods, exactly like the real game.
+// Sodium must use its full distribution jar there: it is a LIBRARY that locates the inner
+// mod jar and also carries classes the mod needs (compatibility.workarounds.*), so neither
+// the wrapper nor the inner jar alone works from the dev classpath.
+tasks.register('copyRunMods', Copy) {
+    from("libs/${acedium_jar}")
+    from('libs/run-mods')
+    into('run/mods')
+}
+tasks.named('prepareClientRun') {
+    dependsOn 'copyRunMods'
+}
 
-    // Sodium — только для компиляции, не вшиваем в JAR
-    modCompileOnly "maven.modrinth:sodium:mc1.21.1-0.6.13-fabric"
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+            minecraft_version_range: minecraft_version_range,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_authors            : mod_authors,
+            mod_version            : mod_version,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
 
-    // Nvidium — только для компиляции, не вшиваем в JAR
-    modCompileOnly files('../nvidium-0.4.1-beta9-1.21-1.21.1.jar')
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
